@@ -1,0 +1,111 @@
+{
+    
+    "paramName": {
+        "VPC" :{
+            "Description": "The Default VPC",
+            "Type": "AWS::EC2::VPC::Id"
+        },
+       
+       "LoginKey": {
+           "Description": "Pem file for authenticatin",
+           "Type": "AWS::EC2::KeyPair::KeyName"
+       },
+       
+       "InstanceTypeparam": {
+           "Description": "Instancetype",
+           "Type": "String",
+           "Default": "t2.micro",
+           "AllowedValues": ["t2.micro","t2.nano"]
+       },
+       "Mappings":{
+           
+           "RegionMap": {
+                   "us-west-2": {
+                       "AMI": "ami-aa5ebdd2"
+                     },
+                     "us-east-1": {
+                       "AMI": "ami-ea87a78f"
+                     }
+           }
+           
+       },
+
+        "test": {
+        "Description": "hello",
+        "Type": "String"
+        }
+    },
+    
+"Resources": {
+   
+   
+   "SSHBastionsecGroupName" : {
+     "Type" : "AWS::EC2::SecurityGroup",
+     "Properties" : {
+       "GroupDescription" : "security group for bastion host",
+       "VpcId": {"Ref": "VPC"},
+       "SecurityGroupIngress" : [{
+         "CidrIp": "0.0.0.0/0",
+         "FromPort": 22,
+         "IpProtocol": "tcp",
+         "ToPort": 22 
+       }]
+           
+     }
+   },
+   
+    "SSHBastionhost": {
+        "Type": "AWS::EC2::Instance",
+        "Properties": {       
+            "ImageId":  {"Fn::FindInMap": ["RegionMap",{"Ref": "AWS::Region"},"AMI"]} ,
+            "InstanceType": { "Ref": "InstanceTypeparam" }
+            ,
+             "NetworkInterfaces": [{
+                   "GroupSet":[ { "Ref": "SSHBastionsecGroupName" }],
+                   "AssociatePublicIpAddress" : true,
+                   "Description" : "My Bastion host",
+                   "DeviceIndex" : "0",
+                   "SubnetId" : ""
+                }],
+            "Keyname":{ "Ref": "LoginKey" },
+                
+            "Tags": [
+                {
+                    "Key": "Name",
+                    "Value": "Test"
+                }
+            ]
+            
+       }
+ } ,
+
+  
+  "eip": {
+    "Type": "AWS::EC2::EIP",
+    "Properties": {
+      "Domain": "vpc",
+      "InstanceId": { "Ref": "SSHBastionhost" }
+      
+    }
+  }
+     
+   },
+   "Outputs": {
+       
+       "SSHBastionHostIP" : {
+         "Value" :  { "Ref": "eip" }
+         
+       },
+       "ec2details" : {
+           
+           "ec2details" : {
+             "Value" :   { "Ref": "SSHBastionhost" }
+                          
+                          }
+           
+       }
+
+
+       
+   }
+}
